@@ -1,166 +1,170 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { TarotCardData, BirthChartData, AstrologyResult } from "../types";
 
 const SYSTEM_INSTRUCTION = `
-Você é a "Mystica", uma inteligência artificial mística, especialista em Tarot (Rider-Waite), Astrologia e esoterismo. 
+Você é a "Mystica", um oráculo espiritual místico, especialista em Tarot (Rider-Waite), Astrologia e esoterismo. 
 Seu tom de voz deve ser acolhedor, misterioso, profundo, mas claro e direto. Evite linguagem excessivamente arcaica, prefira um tom moderno e espiritualizado.
 Sempre responda em Português do Brasil.
 `;
+
+// Helper para obter a chave e instanciar o modelo de forma robusta
+const getAIModel = (modelName: string = "gemini-2.5-flash") => {
+  const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+
+  if (!apiKey) {
+    console.error("[Mystica Debug] ERRO: VITE_GOOGLE_API_KEY não encontrada no ambiente.");
+    throw new Error("Chave da API Gemini não encontrada no arquivo .env");
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+
+  return genAI.getGenerativeModel({
+    model: modelName,
+  });
+};
+
+// Helper para extrair JSON de uma string que pode conter markdown ou texto extra
+const extractJSON = (text: string) => {
+  try {
+    // Tenta o parse direto primeiro
+    return JSON.parse(text);
+  } catch (e) {
+    // Tenta encontrar o bloco de JSON usando regex
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch (innerError) {
+        console.error("[Mystica Debug] Falha ao parsear JSON extraído:", innerError);
+        throw new Error("A resposta astral veio em um formato indecifrável.");
+      }
+    }
+    throw new Error("Não foi possível encontrar sabedoria estruturada na resposta.");
+  }
+};
 
 export const interpretTarotSpread = async (
   question: string,
   cards: TarotCardData[],
   astrologyContext?: AstrologyResult | null
 ): Promise<string> => {
-  // Inicialização dentro da função para garantir a chave mais recente
-  const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
-  if (!apiKey) {
-    throw new Error("Chave da API Gemini não encontrada. Verifique o arquivo .env");
-  }
-  const ai = new GoogleGenAI({ apiKey });
-  const modelName = 'gemini-3-flash-preview';
 
+  const model = getAIModel("gemini-2.5-flash");
   const cardNames = cards.map(c => c.namePt).join(', ');
 
   let astroPrompt = "";
   if (astrologyContext) {
     astroPrompt = `
-    DADOS DO MAPA ASTRAL DO USUÁRIO (Use para personalizar a leitura):
-    - Sol em ${astrologyContext.planets.sun.sign} (Essência)
-    - Lua em ${astrologyContext.planets.moon.sign} (Emoções)
-    - Ascendente em ${astrologyContext.planets.rising.sign} (Como se projeta)
-    - Momento de vida (Nódulo Norte): ${astrologyContext.deepPoints.northNode.sign}
-    
-    INSTRUÇÃO ESPECIAL: Relacione a energia das cartas com o mapa astral do usuário. Por exemplo, se sair uma carta de água e o usuário tiver Lua em Peixes, destaque a profundidade emocional.
-    `;
+     DADOS DO MAPA ASTRAL DO USUÁRIO:
+     - Sol em ${astrologyContext.planets.sun.sign}, Lua em ${astrologyContext.planets.moon.sign}, Ascendente em ${astrologyContext.planets.rising.sign}.
+     Relacione as cartas com esse mapa de forma personalizada.
+     `;
   }
 
   const prompt = `
-    O usuário fez a seguinte pergunta ou mentalizou o seguinte tema: "${question || 'Leitura Geral'}".
-    As cartas tiradas foram, nesta ordem (Passado, Presente, Futuro/Resultado): ${cardNames}.
-    
-    ${astroPrompt}
-
-    Por favor, forneça uma interpretação detalhada desta tiragem. 
-    1. Analise cada carta individualmente no contexto da posição.
-    2. Faça uma síntese de como elas se conectam.
-    3. Dê um conselho final baseado na energia geral.
-    
-    Formate a resposta com parágrafos claros e use Markdown para negrito nos nomes das cartas.
-  `;
+     ${SYSTEM_INSTRUCTION}
+     
+     PERGUNTA: "${question || 'Leitura Geral'}".
+     CARTAS: ${cardNames}.
+     
+     ${astroPrompt}
+ 
+     Dê uma interpretação profunda e mística (Passado, Presente, Futuro). 
+     Use Markdown para estruturar a resposta (Negrito, Tópicos, etc).
+   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: prompt,
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: 0.8,
-      }
-    });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
 
-    return response.text || "Os astros estão nebulosos hoje. Tente novamente.";
-  } catch (error: any) {
-    console.error("Erro detalhado na leitura de tarot:", error);
-    if (error.message?.includes("403") || error.message?.includes("permission")) {
-      throw new Error("O Portal Místico exige uma chave com permissões (403). Use o botão 'Ativar Recursos Pro' no topo.");
+    if (!text || text.trim().length < 10) {
+      throw new Error("As cartas estão mudas hoje.");
     }
-    throw new Error("Não foi possível conectar com o plano astral. Verifique sua conexão.");
+
+    return text;
+  } catch (error: any) {
+    console.error("[Mystica Tarot] ERRO:", error);
+
+    if (error.message?.includes('429') || error.message?.includes('quota')) {
+      throw new Error("O oráculo está sobrecarregado de visões. Aguarde um momento para que as energias se acalmem.");
+    }
+
+    if (error.message?.includes('safety')) {
+      throw new Error("As energias desta pergunta são muito densas para serem reveladas agora (Bloqueio de Segurança).");
+    }
+
+    throw new Error(`Conexão Astral Interrompida: ${error.message || "Tente novamente"}`);
   }
 };
 
 export const interpretBirthChart = async (
   data: BirthChartData
 ): Promise<AstrologyResult> => {
-  const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
-  const ai = new GoogleGenAI({ apiKey });
-  // Mudando para flash-preview para evitar erros de permissão comuns com o Pro em certas chaves
-  const modelName = 'gemini-3-flash-preview';
+
+  const model = getAIModel("gemini-2.5-flash");
 
   const prompt = `
-    Realize uma leitura aprofundada e COMPLETA do Mapa Astral para:
-    Nome: ${data.name}
-    Data: ${data.date}
-    Horário: ${data.time}
-    Local: ${data.place}
-
-    Estime as posições astronômicas com precisão.
-    Além dos planetas básicos, inclua Lilith, Nódulo Norte e Quíron.
-
-    Retorne APENAS um JSON válido com a seguinte estrutura estrita:
-    {
-      "planets": {
-        "sun": { "sign": "Nome do Signo", "house": "Casa X", "description": "Resumo da essência" },
-        "moon": { "sign": "Nome do Signo", "house": "Casa X", "description": "Resumo emocional" },
-        "rising": { "sign": "Nome do Signo", "house": "Casa 1", "description": "A máscara social" },
-        "mercury": { "sign": "Nome do Signo", "house": "Casa X", "description": "Intelecto" },
-        "venus": { "sign": "Nome do Signo", "house": "Casa X", "description": "Amor e valores" },
-        "mars": { "sign": "Nome do Signo", "house": "Casa X", "description": "Ação e desejo" },
-        "jupiter": { "sign": "Nome do Signo", "house": "Casa X", "description": "Expansão" },
-        "saturn": { "sign": "Nome do Signo", "house": "Casa X", "description": "Lições e limites" }
-      },
-      "deepPoints": {
-        "lilith": { "sign": "Nome do Signo", "meaning": "O lado sombra e rebeldia" },
-        "northNode": { "sign": "Nome do Signo", "meaning": "O propósito de alma e destino" },
-        "chiron": { "sign": "Nome do Signo", "meaning": "A ferida que cura" }
-      },
-      "elementalBalance": "Análise breve do equilíbrio dos elementos (Fogo, Terra, Ar, Água)",
-      "analysis": "Uma síntese profunda e poética da personalidade desta pessoa, focando nos potenciais e desafios."
-    }
-  `;
+     ${SYSTEM_INSTRUCTION}
+ 
+     Gere um Mapa Astral completo para:
+     Nome: ${data.name}, Data: ${data.date}, Hora: ${data.time}, Local: ${data.place}
+ 
+     Retorne APENAS um JSON válido seguindo a estrutura abaixo, sem textos extras:
+     {
+       "planets": {
+         "sun": { "sign": "...", "house": "...", "description": "..." },
+         "moon": { "sign": "...", "house": "...", "description": "..." },
+         "rising": { "sign": "...", "house": "...", "description": "..." },
+         "mercury": { "sign": "...", "house": "...", "description": "..." },
+         "venus": { "sign": "...", "house": "...", "description": "..." },
+         "mars": { "sign": "...", "house": "...", "description": "..." },
+         "jupiter": { "sign": "...", "house": "...", "description": "..." },
+         "saturn": { "sign": "...", "house": "...", "description": "..." }
+       },
+       "deepPoints": {
+         "lilith": { "sign": "...", "meaning": "..." },
+         "northNode": { "sign": "...", "meaning": "..." },
+         "chiron": { "sign": "...", "meaning": "..." }
+       },
+       "elementalBalance": "...",
+       "analysis": "..."
+     }
+   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: prompt,
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        responseMimeType: "application/json",
-      }
-    });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const jsonText = response.text();
 
-    const jsonText = response.text || "{}";
-    return JSON.parse(jsonText.trim()) as AstrologyResult;
-  } catch (error: any) {
-    console.error("Erro no mapa astral:", error);
-    if (error.message?.includes("403")) {
-      throw new Error("As estrelas exigem uma chave de acesso paga para este cálculo complexo (Erro 403). Use o botão 'Ativar Recursos Pro'.");
+    const resultData = extractJSON(jsonText);
+
+    // Validação básica da estrutura
+    if (!resultData.planets || !resultData.planets.sun || !resultData.analysis) {
+      throw new Error("As estrelas retornaram uma mensagem incompleta.");
     }
-    throw new Error("As estrelas não se alinharam para esta leitura. Tente novamente em alguns instantes.");
+
+    return resultData as AstrologyResult;
+  } catch (error: any) {
+    console.error("[Mystica Astro] ERRO:", error);
+    if (error.message?.includes('429')) {
+      throw new Error("Muitas almas consultando o céu agora. Aguarde 30 segundos.");
+    }
+    throw new Error(error.message || "As estrelas se ocultaram. Tente novamente.");
   }
 };
 
 export const getDailyHoroscope = async (signName: string): Promise<string> => {
-  const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
-  const ai = new GoogleGenAI({ apiKey });
-  const modelName = 'gemini-3-flash-preview';
+  const model = getAIModel("gemini-2.5-flash");
 
-  const prompt = `
-    Gere um horóscopo diário para o signo de ${signName}.
-    Considere a data de hoje.
-    
-    Estrutura:
-    - Energia do Dia
-    - Amor
-    - Trabalho
-    - Conselho Místico
-    
-    Seja breve e inspirador.
-  `;
+  const prompt = `${SYSTEM_INSTRUCTION}\n\nGere um horóscopo diário místico e breve para o signo de ${signName}. Use Markdown.`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: prompt,
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: 0.7,
-      }
-    });
-
-    return response.text || "As estrelas estão silenciosas hoje.";
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text() || "Os astros estão em silêncio para você hoje.";
   } catch (error: any) {
-    console.error("Erro no horóscopo:", error);
-    throw new Error("Não foi possível conectar com os astros.");
+    console.error("[Mystica Horóscopo] ERRO:", error);
+    return "O céu está nublado no momento. Tente mais tarde.";
   }
 };

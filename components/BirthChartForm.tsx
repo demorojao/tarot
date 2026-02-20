@@ -4,7 +4,6 @@ import { BirthChartData, AstrologyResult, PlanetInfo, DeepPointInfo } from '../t
 import { interpretBirthChart } from '../services/geminiService';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
-
 interface Props {
   onError: (msg: string) => void;
   onChartComplete: (result: AstrologyResult) => void;
@@ -48,7 +47,8 @@ export const BirthChartForm: React.FC<Props> = ({ onError, onChartComplete }) =>
         });
       }
     } catch (err: any) {
-      onError(err.message);
+      console.error("[BirthChartForm] Erro:", err);
+      onError(err.message || "As estrelas estão nubladas. Tente novamente em alguns instantes.");
     } finally {
       setLoading(false);
     }
@@ -124,11 +124,11 @@ export const BirthChartForm: React.FC<Props> = ({ onError, onChartComplete }) =>
   return (
     <div className="max-w-6xl mx-auto p-4 flex flex-col lg:flex-row gap-8">
       {/* Form Section */}
-      <div className="w-full lg:w-1/4 glass-panel p-6 h-fit sticky top-24">
-        <h2 className="text-2xl font-serif text-indigo-300 mb-6 border-b border-indigo-900 pb-2">Dados de Nascimento</h2>
+      <div className="w-full lg:w-1/3 xl:w-1/4 glass-panel p-6 md:p-8 h-fit sticky top-24 border-amber-900/30">
+        <h2 className="text-2xl font-serif text-amber-400 mb-6 border-b border-amber-900/50 pb-2">Dados de Nascimento</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs text-indigo-200 mb-1">Nome Completo</label>
+            <label className="block text-xs font-serif text-amber-200 mb-1">Nome Completo</label>
             <input
               name="name"
               type="text"
@@ -136,10 +136,10 @@ export const BirthChartForm: React.FC<Props> = ({ onError, onChartComplete }) =>
               value={formData.name}
               onChange={handleChange}
               title="Nome Completo"
-              className="w-full bg-slate-900/50 border border-white/10 rounded p-2 text-white focus:border-indigo-500/50 outline-none transition-colors" />
+              className="w-full bg-slate-900/60 border border-white/10 rounded p-3 text-white focus:border-amber-500/50 focus:bg-slate-900/80 outline-none transition-colors" />
           </div>
           <div>
-            <label className="block text-xs text-indigo-200 mb-1">Data de Nascimento</label>
+            <label className="block text-xs font-serif text-amber-200 mb-1">Data de Nascimento</label>
             <input
               name="date"
               type="date"
@@ -147,10 +147,10 @@ export const BirthChartForm: React.FC<Props> = ({ onError, onChartComplete }) =>
               value={formData.date}
               onChange={handleChange}
               title="Data de Nascimento"
-              className="w-full bg-slate-900/50 border border-white/10 rounded p-2 text-white focus:border-indigo-500/50 outline-none block transition-colors" />
+              className="w-full bg-slate-900/60 border border-white/10 rounded p-3 text-white focus:border-amber-500/50 focus:bg-slate-900/80 outline-none block transition-colors" />
           </div>
           <div>
-            <label className="block text-xs text-indigo-200 mb-1">Horário (exato)</label>
+            <label className="block text-xs font-serif text-amber-200 mb-1">Horário (exato)</label>
             <input
               name="time"
               type="time"
@@ -158,10 +158,10 @@ export const BirthChartForm: React.FC<Props> = ({ onError, onChartComplete }) =>
               value={formData.time}
               onChange={handleChange}
               title="Horário de Nascimento"
-              className="w-full bg-slate-900/50 border border-white/10 rounded p-2 text-white focus:border-indigo-500/50 outline-none block transition-colors" />
+              className="w-full bg-slate-900/60 border border-white/10 rounded p-3 text-white focus:border-amber-500/50 focus:bg-slate-900/80 outline-none block transition-colors" />
           </div>
           <div>
-            <label className="block text-xs text-indigo-200 mb-1">Cidade e Estado</label>
+            <label className="block text-xs font-serif text-amber-200 mb-1">Cidade e Estado</label>
             <input
               name="place"
               type="text"
@@ -169,12 +169,12 @@ export const BirthChartForm: React.FC<Props> = ({ onError, onChartComplete }) =>
               value={formData.place}
               onChange={handleChange}
               placeholder="Ex: São Paulo, SP"
-              className="w-full bg-slate-900/50 border border-white/10 rounded p-2 text-white focus:border-indigo-500/50 outline-none transition-colors" />
+              className="w-full bg-slate-900/60 border border-white/10 rounded p-3 text-white focus:border-amber-500/50 focus:bg-slate-900/80 outline-none transition-colors" />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-3 rounded-lg font-bold font-serif shadow-lg mt-4 transition-all ${loading ? 'bg-slate-600 cursor-wait' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}
+            className={`w-full py-3.5 rounded-lg font-bold font-serif shadow-lg mt-6 text-sm transition-all transform hover:scale-[1.02] active:scale-95 ${loading ? 'bg-slate-600 cursor-wait shadow-none text-slate-300' : 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-900/50'}`}
           >
             {loading ? 'Consultando as Estrelas...' : 'Revelar Mapa Completo'}
           </button>

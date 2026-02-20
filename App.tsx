@@ -29,7 +29,7 @@ const AppContent: React.FC = () => {
   const handleNavigate = (view: AppView) => {
     // Bloqueio do Tarot se não houver Mapa Astral
     if (view === AppView.TAROT && !userAstrology) {
-      showError("O Oráculo está trancado. As cartas exigem a vibração do seu Mapa Astral para serem reveladas.");
+      showError("O Oráculo está trancado. As cartas exigem a vibração do seu Mapa Astral para serem reveladas. Complete seu mapa primeiro!");
       setCurrentView(AppView.ASTROLOGY);
       setIsMenuOpen(false);
       return;
@@ -61,7 +61,7 @@ const AppContent: React.FC = () => {
           }`}
       >
         <span className="text-xl group-hover:scale-110 transition-transform duration-300">{isLocked ? '🔒' : icon}</span>
-        <span className="font-serif font-bold text-sm tracking-wide hidden xl:inline">{label}</span>
+        <span className="font-serif font-bold text-xs xl:text-sm tracking-wide hidden lg:inline">{label}</span>
         {currentView === view && (
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-amber-500 rounded-full shadow-[0_0_5px_#f59e0b]"></div>
         )}
@@ -93,25 +93,28 @@ const AppContent: React.FC = () => {
 
       {/* Header / Top Bar Navigation */}
       <header className="fixed top-0 w-full z-50 p-4 bg-slate-900/40 backdrop-blur-xl border-b border-white/5 transition-all">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div
-            className="text-2xl md:text-3xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 cursor-pointer drop-shadow-[0_0_10px_rgba(251,191,36,0.3)] hover:scale-105 transition-transform"
-            onClick={() => handleNavigate(AppView.HOME)}
-          >
-            MYSTICA
+        <div className="max-w-7xl mx-auto flex justify-between items-center px-2 md:px-4">
+
+          <div className="flex items-center gap-4 lg:gap-8">
+            <div
+              className="text-xl md:text-3xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 cursor-pointer drop-shadow-[0_0_10px_rgba(251,191,36,0.3)] hover:scale-105 transition-transform shrink-0"
+              onClick={() => handleNavigate(AppView.HOME)}
+            >
+              MYSTICA
+            </div>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-1 bg-slate-900/50 p-1 rounded-xl border border-white/5 backdrop-blur-md">
+              <NavButton view={AppView.HOME} label="Início" icon="✨" />
+              <NavButton view={AppView.TAROT} label="Tarot" icon="🎴" />
+              <NavButton view={AppView.HOROSCOPE} label="Horóscopo" icon="🔮" />
+              <NavButton view={AppView.ASTROLOGY} label="Mapa" icon="🪐" />
+              <NavButton view={AppView.LIBRARY} label="Grimório" icon="📖" />
+              <NavButton view={AppView.HISTORY} label="Histórico" icon="📜" />
+            </nav>
           </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1 bg-slate-900/50 p-1 rounded-xl border border-white/5 backdrop-blur-md">
-            <NavButton view={AppView.HOME} label="Início" icon="✨" />
-            <NavButton view={AppView.TAROT} label="Tarot" icon="🎴" />
-            <NavButton view={AppView.HOROSCOPE} label="Horóscopo" icon="🔮" />
-            <NavButton view={AppView.ASTROLOGY} label="Mapa" icon="🪐" />
-            <NavButton view={AppView.LIBRARY} label="Grimório" icon="📖" />
-            <NavButton view={AppView.HISTORY} label="Histórico" icon="📜" />
-          </nav>
-
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 lg:gap-4 shrink-0">
             {user ? (
               <div className="flex items-center gap-4">
                 <span className="hidden lg:block text-xs text-slate-400 font-serif">
@@ -130,7 +133,7 @@ const AppContent: React.FC = () => {
                 variant="primary"
                 onClick={() => setIsAuthModalOpen(true)}
                 icon="👤"
-                className="hidden md:flex !px-5 !py-2 text-xs"
+                className="hidden lg:flex !py-2 !px-4 text-xs xl:text-sm h-[40px] xl:h-[44px]"
               >
                 Entrar / Criar Conta
               </MagicButton>
@@ -195,10 +198,10 @@ const AppContent: React.FC = () => {
         {/* Global Error Toast */}
         {
           errorMsg && (
-            <div className="fixed bottom-8 right-8 bg-slate-900 text-white px-6 py-4 rounded-lg shadow-[0_0_30px_rgba(245,158,11,0.3)] animate-fade-in z-50 flex items-center gap-3 border border-amber-500/50 max-w-sm glass-panel">
-              <span className="text-2xl">⚠️</span>
+            <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white px-6 py-4 rounded-xl shadow-[0_0_30px_rgba(245,158,11,0.5)] animate-fade-in-up z-50 flex items-center gap-3 border border-amber-500/50 max-w-md w-[90%] backdrop-blur-md">
+              <span className="text-2xl animate-pulse">✨</span>
               <div className="flex flex-col">
-                <span className="font-serif font-bold text-amber-400">Mensagem Astral:</span>
+                <span className="font-serif font-bold text-amber-400">Mensagem Astral</span>
                 <span className="text-sm text-slate-300">{errorMsg}</span>
               </div>
             </div>
@@ -210,7 +213,7 @@ const AppContent: React.FC = () => {
           currentView === AppView.HOME && (
             <div className="flex flex-col items-center justify-center min-h-[70vh] text-center animate-fade-in-up">
               <div className="mb-4 text-amber-500 text-sm font-serif tracking-[0.3em] uppercase opacity-80 animate-pulse">
-                Sabedoria Ancestral & Inteligência Artificial
+                Sabedoria Ancestral & Intuição Astral
               </div>
 
               <h1 className="text-6xl md:text-8xl font-serif text-white mb-8 drop-shadow-[0_0_30px_rgba(251,191,36,0.4)] leading-tight">
@@ -281,7 +284,7 @@ const AppContent: React.FC = () => {
               <h2 className="text-3xl font-serif text-amber-400 mb-6">Sobre a Mystica</h2>
               <div className="space-y-6 text-slate-300 leading-relaxed">
                 <p>
-                  O <strong>Mystica</strong> utiliza modelos de ponta da série Gemini para interpretar arquétipos e conectar a sabedoria antiga com a tecnologia moderna.
+                  O <strong>Mystica</strong> utiliza conhecimentos profundos guardados nos arquivos do universo, combinando arquétipos milenares através do oráculo digital para guiar seus caminhos com clareza.
                 </p>
               </div>
             </div>

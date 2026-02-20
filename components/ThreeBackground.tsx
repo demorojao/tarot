@@ -55,8 +55,8 @@ export const ThreeBackground: React.FC = () => {
                 <MovingStars />
 
                 <Float speed={2} rotationIntensity={0.5} floatIntensity={1}>
-                    <Cloud opacity={0.3} speed={0.4} width={10} depth={1.5} segments={20} position={[0, -2, -5]} color="#4c1d95" />
-                    <Cloud opacity={0.3} speed={0.4} width={10} depth={1.5} segments={20} position={[0, 2, -10]} color="#1e1b4b" />
+                    <Cloud opacity={0.5} speed={0.4} bounds={[10, 2, 2]} position={[0, -2, -5]} color="#4c1d95" />
+                    <Cloud opacity={0.5} speed={0.4} bounds={[10, 2, 2]} position={[0, 2, -10]} color="#1e1b4b" />
                 </Float>
 
                 <Sparkles
